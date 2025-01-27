@@ -1,0 +1,5 @@
+{
+  "@@locale": "hi",
+  "title": "स्वागत है",
+  "greeting": "नमस्ते, {name}!"
+}
