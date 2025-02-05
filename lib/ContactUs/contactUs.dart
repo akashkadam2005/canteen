@@ -117,10 +117,10 @@ class _ContactUsPageState extends State<ContactUsPage> {
                   // Logo at the top
                   Center(
                     child: Image.asset(
-                      'assets/images/cantain.jpg', // Add your logo image here
-                      // height: 100,
-                      // width: 100,
-                      fit: BoxFit.contain,
+                      'assets/images/logo.png', // Add your logo image here
+                      height: 300,
+                      width: 400,
+                      // fit: BoxFit.contain,
                     ),
                   ),
                   SizedBox(height: 16),

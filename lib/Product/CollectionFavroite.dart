@@ -73,8 +73,7 @@ class _FavoriteState extends State<Favorite> {
                 width: 80,
                 height: 80,
                 fit: BoxFit.cover,
-              )
-                  : Image.asset(
+              ) : Image.asset(
                 'assets/images/p1.jpg',
                 width: 80,
                 height: 80,

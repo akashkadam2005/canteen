@@ -10,6 +10,7 @@ import 'package:printing/printing.dart';
 import 'package:http/http.dart' as http;
 
 import '../Authantication/AuthUser.dart';
+
 class OrderShow extends StatelessWidget {
   final Map<String, dynamic> order;
 
@@ -67,8 +68,10 @@ class OrderShow extends StatelessWidget {
               pw.Text("Customer Name: ${order['customer_name']}"),
               pw.Text("Order Date: ${order['order_date']}"),
               pw.Text("Shipping Address: ${order['shipping_address']}"),
-              pw.Text("Payment Method: ${getPaymentMethod(order['payment_method'])}"),
-              pw.Text("Payment Status: ${getPaymentStatus(order['payment_status'])}"),
+              pw.Text(
+                  "Payment Method: ${getPaymentMethod(order['payment_method'])}"),
+              pw.Text(
+                  "Payment Status: ${getPaymentStatus(order['payment_status'])}"),
               pw.Text("Total Price: ₹${order['total_price']}"),
             ],
           );
@@ -79,9 +82,8 @@ class OrderShow extends StatelessWidget {
     return pdf;
   }
 
-
-
-  Future<void> _submitRating(BuildContext context, dynamic item, double rating, String review) async {
+  Future<void> _submitRating(
+      BuildContext context, dynamic item, double rating, String review) async {
     if (rating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please select a rating before submitting.")),
@@ -170,11 +172,13 @@ class OrderShow extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
-                await _submitRating(context, item, selectedRating, reviewController.text);
+                await _submitRating(
+                    context, item, selectedRating, reviewController.text);
               },
               style: ElevatedButton.styleFrom(
                 // backgroundColor: Colors.,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -189,7 +193,6 @@ class OrderShow extends StatelessWidget {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -241,8 +244,18 @@ class OrderShow extends StatelessWidget {
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
+                            errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                              // Return the default image in case of error
+                              return Image.asset(
+                                'assets/images/p1.jpg',  // Path to your default image
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              );
+                            },
                           ),
                         ),
+
                         const SizedBox(width: 10),
                         Expanded(
                           child: Padding(
@@ -327,7 +340,9 @@ class OrderShow extends StatelessWidget {
                       "Payment Status: ${getPaymentStatus(order['payment_status'])}",
                       style: TextStyle(
                         fontSize: 16,
-                        color: order['payment_status'] == "3" ? Colors.green : Colors.red,
+                        color: order['payment_status'] == "3"
+                            ? Colors.green
+                            : Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -351,14 +366,18 @@ class OrderShow extends StatelessWidget {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.deepOrangeAccent,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: const Text(
                             "Close",
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white),
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
                           ),
                         ),
                         ElevatedButton(
@@ -367,14 +386,18 @@ class OrderShow extends StatelessWidget {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.greenAccent,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: const Text(
                             "Save As PDF",
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white),
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
                           ),
                         ),
                       ],

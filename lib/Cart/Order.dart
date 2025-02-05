@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:canteen/Pages/HomeScreen.dart';
+import 'package:canteen/Profile/Profile.dart';
+import 'package:canteen/Profile/ProfileEdit.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -96,7 +98,14 @@ print(orderData);
 
           if (clearCartResponse.statusCode == 200) {
             var clearCartData = json.decode(clearCartResponse.body);
-
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ConfirmationPage(    name: name, phone: phone, address: Address,
+                  email: email, image: image,  toggleTheme: toggleTheme,
+                  isDarkMode: isDarkMode, customerId: customerId,),
+              ),
+            );
             if (clearCartData['status'] == "success") {
               // Show cart cleared message
               // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -111,14 +120,7 @@ print(orderData);
           }
 
           // Navigate to confirmation page
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ConfirmationPage(    name: name, phone: phone, address: Address,
-                  email: email, image: image,  toggleTheme: toggleTheme,
-                  isDarkMode: isDarkMode, customerId: customerId,),
-            ),
-          );
+
         } else {
           throw Exception("Failed to place order: ${responseData['message']}");
         }
@@ -264,6 +266,9 @@ print(orderData);
                       GestureDetector(
                         onTap: () {
                           // Add logic to change address
+                          Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfilePage(name: name,
+                              address: Address, email: email, image: image, customerId: customerId, mobile: phone,
+                            )));
                         },
                         child: Text(
                           'Change Address',
