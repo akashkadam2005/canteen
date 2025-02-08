@@ -190,7 +190,7 @@ class _SplashScreenState extends State<SplashScreen>
     )..repeat();
 
     // Navigate to the next screen after a delay
-    Future.delayed(const Duration(seconds: 10), () {
+    Future.delayed(const Duration(seconds: 6), () {
       Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage(
         toggleTheme: widget.toggleTheme,
         isDarkMode: widget.isDarkMode,

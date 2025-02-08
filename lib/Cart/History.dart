@@ -66,11 +66,11 @@ class _HistoryPageState extends State<HistoryPage> {
       case "1":
         return "Pending";
       case "2":
-        return "Out For Delivery";
+        return "Processing";
       case "3":
-        return "Delivered";
+        return "Completed";
       default:
-        return "Unknown Status";
+        return "Unknown";
     }
   }
 

@@ -6,10 +6,10 @@ class ApiHelper {
   static final ApiHelper _instance = ApiHelper._internal();
 
   // Base URL
-  final String baseUrl = 'http://192.168.91.172/CanteenAutomation/api/';
+  final String baseUrl = 'http://192.168.175.172/CanteenAutomation/api/';
 
   // Image base URL
-  final String imageBaseUrl = 'http://192.168.91.172/CanteenAutomation/uploads/';
+  final String imageBaseUrl = 'http://192.168.175.172/CanteenAutomation/uploads/';
 
   // Private constructor for singleton
   ApiHelper._internal();

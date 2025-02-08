@@ -47,6 +47,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<dynamic> categories = [];
   List<dynamic> products = [];
+  List<dynamic> originalProducts = [];
   String selectedCategory = 'All';
   bool _isDismissed = false;
   List<String> cartProducts = []; // Stores product IDs of items in the cart.
@@ -272,12 +273,14 @@ class _HomeScreenState extends State<HomeScreen> {
         productEndpoint += '?product_status=1'; // Fetch only Veg products
       }
       print(productEndpoint);
+
       final productResponse = await ApiHelper().httpGet(productEndpoint);
       if (productResponse.statusCode == 200) {
         final fetchedProducts = json.decode(productResponse.body)['data'];
 
         setState(() {
-          products = fetchedProducts;
+          originalProducts = List.from(fetchedProducts); // Store original data
+          products = List.from(fetchedProducts);
         });
       } else {
         print("Failed to fetch products.");
@@ -286,6 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print("Error: $e");
     }
   }
+
 
   Future<void> fetchSliderImages() async {
     final response = await ApiHelper()
@@ -312,12 +316,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String selectedSortOption = "Relevance";
+  String? selectedSortOption;
+  String? selectedRatingOption;
 
-  void openSortDialog(BuildContext context) {
+  void openSortDialog(BuildContext context, bool isSort) {
     showModalBottomSheet(
       context: context,
-      // backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -330,38 +334,35 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Sort",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    // color: Colors.black,
-                  ),
+                  isSort ? "Sort by Price" : "Sort by Rating",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 10),
                 Column(
                   children: [
-                    // List of sorting options
                     ...[
-                      // "Relevance",
-                      "Rating: High To Low",
-                      // "Delivery Time: Low To High",
-                      "Cost: Low To High",
-                      "Cost: High To Low",
+                      if (isSort) ...[
+                        "Low to High",
+                        "High to Low",
+                      ] else ...[
+                        "Rating High to Low",
+                        "Rating Low to High",
+                      ],
                     ].map(
-                      (option) => RadioListTile<String>(
-                        title: Text(
-                          option,
-                          // style: TextStyle(color: Colors.black),
-                        ),
+                          (option) => RadioListTile<String>(
+                        title: Text(option),
                         value: option,
-                        groupValue: selectedSortOption,
+                        groupValue: isSort ? selectedSortOption : selectedRatingOption,
                         activeColor: Colors.red,
                         onChanged: (value) {
                           setState(() {
-                            selectedSortOption = value!;
+                            if (isSort) {
+                              selectedSortOption = value!;
+                            } else {
+                              selectedRatingOption = value!;
+                            }
                           });
-                          Navigator.pop(
-                              context, value); // Close modal with value
+                          Navigator.pop(context, value); // Close modal and pass value
                         },
                       ),
                     ),
@@ -374,29 +375,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     TextButton(
                       onPressed: () {
                         setState(() {
-                          selectedSortOption = "Relevance"; // Clear selection
+                          if (isSort) {
+                            selectedSortOption = null;
+                          } else {
+                            selectedRatingOption = null;
+                          }
                         });
-                        Navigator.pop(context);
+                        Navigator.pop(context, "Clear Filter"); // Pass "Clear Filter" string
                       },
-                      child: Text(
-                        "Close all",
-                        // style: TextStyle(color: Colors.red),
-                      ),
+                      child: Text("Clear Filter"),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        // backgroundColor: Colors.red,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.pop(context, isSort ? selectedSortOption : selectedRatingOption);
                       },
-                      child: Text(
-                        "Apply",
-                        // style: TextStyle(color: Colors.white),
-                      ),
+                      child: Text("Apply"),
                     ),
                   ],
                 ),
@@ -406,37 +404,126 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     ).then((value) {
-      if (value != null) {
-        applySorting(value);
+      if (value == null) {
+        print("Invalid selection or null value received.");
+        return;
+      }
+
+      print("User selected: $value");
+
+      if (value == "Clear Filter") {
+        clearFilter(); // Reset sorting when "Clear Filter" is selected
+      } else if (isSort) {
+        if (value == "Low to High" || value == "High to Low") {
+          applySort(value);
+        } else {
+          print("Invalid Sort Option: $value");
+        }
+      } else {
+        if (value == "Rating High to Low" || value == "Rating Low to High") {
+          applyRatingSort(value);
+        } else {
+          print("Invalid Rating Option: $value");
+        }
       }
     });
   }
 
-  void applySorting(String sortOption) {
+  bool isSort = false; // Tracks whether sorting is applied
+
+  void clearFilter() {
+    print("Clearing filter... Original Products Length: ${originalProducts.length}");
+
     setState(() {
-      switch (sortOption) {
-        case "Rating: High To Low":
-          products.sort((a, b) => double.parse(b['avg_rating'])
-              .compareTo(double.parse(a['avg_rating'])));
-          break;
-        // case "Delivery Time: Low To High":
-        //   products.sort((a, b) =>
-        //       double.parse(a['delivery_time']).compareTo(double.parse(b['delivery_time'])));
-        //   break;
-        case "Cost: Low To High":
-          products.sort((a, b) => double.parse(a['product_price'])
-              .compareTo(double.parse(b['product_price'])));
-          break;
-        case "Cost: High To Low":
-          products.sort((a, b) => double.parse(b['product_price'])
-              .compareTo(double.parse(a['product_price'])));
-          break;
-        default:
-          // Default sorting logic or reset
-          break;
+      selectedSortOption = null;
+      selectedRatingOption = null;
+      isSort = false;
+      isVeg = false;
+
+      if (originalProducts.isNotEmpty) {
+        products = List.from(originalProducts);
+      } else {
+        print("Warning: originalProducts is empty, fetching data again.");
+        fetchData();
       }
     });
+
+    print("Filter cleared and data refreshed.");
   }
+
+
+
+
+
+
+  void applySort(String sortOption) {
+    setState(() {
+      if (products.isNotEmpty) {
+        switch (sortOption) {
+          case "Low to High":
+            products.sort((a, b) {
+              double priceA = double.tryParse(a['product_price'] ?? '0') ?? 0;
+              double priceB = double.tryParse(b['product_price'] ?? '0') ?? 0;
+              return priceA.compareTo(priceB);
+            });
+            break;
+
+          case "High to Low":
+            products.sort((a, b) {
+              double priceA = double.tryParse(a['product_price'] ?? '0') ?? 0;
+              double priceB = double.tryParse(b['product_price'] ?? '0') ?? 0;
+              return priceB.compareTo(priceA);
+            });
+            break;
+
+          default:
+            print("Invalid Sort Option: $sortOption");
+            break;
+        }
+      } else {
+        print("Product list is empty, cannot sort.");
+      }
+    });
+
+    print("Applied Sort: $sortOption");
+  }
+
+
+
+  void applyRatingSort(String ratingOption) {
+    setState(() {
+      if (products.isNotEmpty) {
+        switch (ratingOption) {
+          case "Rating High to Low":
+            products.sort((a, b) {
+              double ratingA = double.tryParse(a['avg_rating'] ?? '0') ?? 0;
+              double ratingB = double.tryParse(b['avg_rating'] ?? '0') ?? 0;
+              return ratingB.compareTo(ratingA);
+            });
+            break;
+
+          case "Rating Low to High":
+            products.sort((a, b) {
+              double ratingA = double.tryParse(a['avg_rating'] ?? '0') ?? 0;
+              double ratingB = double.tryParse(b['avg_rating'] ?? '0') ?? 0;
+              return ratingA.compareTo(ratingB);
+            });
+            break;
+
+          default:
+            print("Invalid Rating Option: $ratingOption");
+            break;
+        }
+      } else {
+        print("Product list is empty, cannot sort.");
+      }
+    });
+
+    print("Applied Rating Sort: $ratingOption");
+  }
+
+
+
 
   Future<void> addItem(String productId, int quantity) async {
     try {
@@ -1670,23 +1757,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               GestureDetector(
-                                onTap: () => openSortDialog(context),
+                                onTap: () => openSortDialog(context, true), // Sort by Price
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 8, horizontal: 20),
+                                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
                                   margin: EdgeInsets.only(right: 12),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[850]
-                                        : Colors.white,
+                                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[850] : Colors.white,
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.black45
-                                            : Colors.black12,
+                                        color: Theme.of(context).brightness == Brightness.dark ? Colors.black45 : Colors.black12,
                                         blurRadius: 5,
                                         offset: Offset(0, 3),
                                       ),
@@ -1694,56 +1774,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(
-                                        Icons.sort,
-                                        size: 20,
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.white
-                                            : Colors.black,
-                                      ),
+                                      Icon(Icons.sort, size: 20, color: Colors.black),
                                       SizedBox(width: 5),
-                                      Text(
-                                        "Sort",
-                                        style: TextStyle(
-                                          color: Theme.of(context).brightness ==
-                                                  Brightness.dark
-                                              ? Colors.white
-                                              : Colors.black,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.arrow_drop_down,
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.white
-                                            : Colors.black,
-                                      ),
+                                      Text("Sort", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                      Icon(Icons.arrow_drop_down, color: Colors.black),
                                     ],
                                   ),
                                 ),
                               ),
-                              SizedBox(width: 21),
+
                               GestureDetector(
-                                onTap: () => openSortDialog(context),
+                                onTap: () => openSortDialog(context, false), // Sort by Rating
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 8, horizontal: 20),
+                                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
                                   margin: EdgeInsets.only(right: 12),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.grey[850]
-                                        : Colors.white,
+                                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[850] : Colors.white,
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.black45
-                                            : Colors.black12,
+                                        color: Theme.of(context).brightness == Brightness.dark ? Colors.black45 : Colors.black12,
                                         blurRadius: 5,
                                         offset: Offset(0, 3),
                                       ),
@@ -1751,34 +1801,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(
-                                        Icons.star,
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.white
-                                            : Colors.black,
-                                        size: 20,
-                                      ),
+                                      Icon(Icons.star, size: 20, color: Colors.black),
                                       SizedBox(width: 5),
-                                      Text(
-                                        "Rating",
-                                        style: TextStyle(
-                                          // color: Colors.white,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.arrow_drop_down,
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.white
-                                            : Colors.black,
-                                      ),
+                                      Text("Rating", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                      Icon(Icons.arrow_drop_down, color: Colors.black),
                                     ],
                                   ),
                                 ),
                               ),
+
                             ],
                           ),
                         ),

@@ -99,7 +99,7 @@ class _SignUpPageState extends State<SignUpPage> {
             // App Logo or Icon
             Image.asset(
               'assets/images/logo.png', // Replace with your actual image filename
-              height: 100,
+              height: 150,
               width: 250,
               fit: BoxFit.cover,
             ),
@@ -150,7 +150,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     ElevatedButton(
                       onPressed: _register,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orangeAccent,
+                        backgroundColor: Colors.lightBlueAccent,
                         padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -178,7 +178,7 @@ class _SignUpPageState extends State<SignUpPage> {
               child: Text(
                 'Already have an account? Login',
                 style: TextStyle(
-                  color: Colors.orangeAccent,
+                  color: Colors.lightBlueAccent,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -198,9 +198,9 @@ Widget buildTextField(String label, TextEditingController controller, IconData i
       obscureText: isPassword,
       keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.orangeAccent),
+        prefixIcon: Icon(icon, color: Colors.lightBlueAccent),
         labelText: label,
-        labelStyle: TextStyle(color: Colors.orangeAccent),
+        labelStyle: TextStyle(color: Colors.black),
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Colors.lightBlueAccent),
           borderRadius: BorderRadius.circular(10),

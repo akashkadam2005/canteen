@@ -117,40 +117,15 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Title
-                // const Text(
-                //   'Welcome Back',
-                //   style: TextStyle(
-                //     fontSize: 36,
-                //     fontWeight: FontWeight.bold,
-                //     color: Colors.orangeAccent,
-                //   ),
-                // ),
-                // const SizedBox(height: 10),
-                // const Text(
-                //   'Log in to continue to Canteen Automation',
-                //   textAlign: TextAlign.center,
-                //   style: TextStyle(
-                //     fontSize: 18,
-                //     color: Colors.black54,
-                //   ),
-                // ),
-                // const SizedBox(height: 30),
 
-                const Text(
-                  'Welcome Back',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orangeAccent,
-                  ),
-                ),
+
                 SizedBox(height: 20,),
                 // App Logo or Icon
                 Image.asset(
                   'assets/images/logo.png', // Replace with your actual image filename
-                  height: 100,
+                  height: 150,
                   width: 250,
+
                   fit: BoxFit.cover,
                 ),
 
@@ -178,7 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          prefixIcon: const Icon(Icons.email, color: Colors.orangeAccent),
+                          prefixIcon: const Icon(Icons.email, color: Colors.lightBlueAccent),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -190,7 +165,7 @@ class _LoginPageState extends State<LoginPage> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          prefixIcon: const Icon(Icons.lock, color: Colors.orangeAccent),
+                          prefixIcon: const Icon(Icons.lock, color: Colors.lightBlueAccent),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -199,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                           : ElevatedButton(
                         onPressed: _login,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orangeAccent,
+                          backgroundColor: Colors.lightBlueAccent,
                           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -229,13 +204,14 @@ class _LoginPageState extends State<LoginPage> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => SignUpPage(toggleTheme: widget.toggleTheme, isDarkMode: widget.isDarkMode)),
+                      MaterialPageRoute(builder: (context) => SignUpPage(toggleTheme: widget.toggleTheme,
+                          isDarkMode: widget.isDarkMode)),
                     );
                   },
                   child: const Text(
                     'Don’t have an account? Sign up',
                     style: TextStyle(
-                      color: Colors.orangeAccent,
+                      color: Colors.lightBlueAccent,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

@@ -8,7 +8,7 @@
 
     <application
 
-        android:label="canteen"
+        android:label="SVPM'S Canteen"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

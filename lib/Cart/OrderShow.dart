@@ -14,10 +14,17 @@ import '../Authantication/AuthUser.dart';
 class OrderShow extends StatelessWidget {
   final Map<String, dynamic> order;
 
+
   const OrderShow({
     Key? key,
     required this.order,
   }) : super(key: key);
+
+
+
+
+
+
 
   String getPaymentMethod(String method) {
     switch (method) {
@@ -32,7 +39,7 @@ class OrderShow extends StatelessWidget {
     }
   }
 
-  String getPaymentStatus(String status) {
+  String getOrderSatus(String status) {
     switch (status) {
       case "1":
         return "Pending";
@@ -71,7 +78,7 @@ class OrderShow extends StatelessWidget {
               pw.Text(
                   "Payment Method: ${getPaymentMethod(order['payment_method'])}"),
               pw.Text(
-                  "Payment Status: ${getPaymentStatus(order['payment_status'])}"),
+                  "Payment Status: ${getOrderSatus(order['order_status'])}"),
               pw.Text("Total Price: ₹${order['total_price']}"),
             ],
           );
@@ -194,6 +201,8 @@ class OrderShow extends StatelessWidget {
     );
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     final orderItems = order['order_items'] as List<dynamic>;
@@ -204,7 +213,8 @@ class OrderShow extends StatelessWidget {
         // backgroundColor: Colors.deepOrange,
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body:
+      SingleChildScrollView(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,6 +280,16 @@ class OrderShow extends StatelessWidget {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                                Row(
+                                  children: List.generate(5, (index) {
+                                    double rating = double.tryParse(item['avg_rating'] ?? '0') ?? 0;
+                                    return Icon(
+                                      Icons.star,
+                                      size: 15,
+                                      color: index < rating.round() ? Colors.orange : Colors.grey.shade400,
+                                    );
+                                  }),
+                                ),
                                 const SizedBox(height: 5),
                                 Text(
                                   "Qty: ${item['quantity']}",
@@ -307,14 +327,14 @@ class OrderShow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Text(
-                    //   "Order ID: ${index+1}",
-                    //   style: const TextStyle(
-                    //     fontWeight: FontWeight.bold,
-                    //     fontSize: 18,
-                    //     color: Colors.deepOrangeAccent,
-                    //   ),
-                    // ),
+                    Text(
+                      "Order ID: ${order['order_id']}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.deepOrangeAccent,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     // Text(
                     //   "Customer Name: ${order['customer_name']}",
@@ -337,10 +357,10 @@ class OrderShow extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      "Payment Status: ${getPaymentStatus(order['payment_status'])}",
+                      "Order Status: ${getOrderSatus(order['order_status'])}",
                       style: TextStyle(
                         fontSize: 16,
-                        color: order['payment_status'] == "3"
+                        color: order['order_status'] == "3"
                             ? Colors.green
                             : Colors.red,
                         fontWeight: FontWeight.bold,
