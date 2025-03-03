@@ -137,65 +137,72 @@ class OrderShow extends StatelessWidget {
 
     await showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
+      isScrollControlled: true, // Makes the modal height dynamic
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "Rate ${item['product_name']}",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            RatingBar.builder(
-              initialRating: 0,
-              minRating: 1,
-              direction: Axis.horizontal,
-              allowHalfRating: false,
-              itemCount: 5,
-              itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
-              itemBuilder: (context, _) => Icon(
-                Icons.star,
-                color: Colors.amber,
+      builder: (context) => Center( // Centers the modal vertically
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Wrap(
+            alignment: WrapAlignment.center, // Ensures centering
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Rate ${item['product_name']}",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  RatingBar.builder(
+                    initialRating: 0,
+                    minRating: 1,
+                    direction: Axis.horizontal,
+                    allowHalfRating: false,
+                    itemCount: 5,
+                    itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    itemBuilder: (context, _) => Icon(
+                      Icons.star,
+                      color: Colors.amber,
+                    ),
+                    onRatingUpdate: (rating) {
+                      selectedRating = rating;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: reviewController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: "Write a review",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () async {
+                      await _submitRating(
+                          context, item, selectedRating, reviewController.text);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      "Submit Your Experience",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
-              onRatingUpdate: (rating) {
-                selectedRating = rating;
-              },
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: reviewController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: "Write a review",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                await _submitRating(
-                    context, item, selectedRating, reviewController.text);
-              },
-              style: ElevatedButton.styleFrom(
-                // backgroundColor: Colors.,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                "Submit Your Experience",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -350,11 +357,11 @@ class OrderShow extends StatelessWidget {
                       "Shipping Address: ${order['shipping_address']}",
                       style: const TextStyle(fontSize: 16),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Payment Method: ${getPaymentMethod(order['payment_method'])}",
-                      style: const TextStyle(fontSize: 16),
-                    ),
+                    // const SizedBox(height: 12),
+                    // Text(
+                    //   "Payment Method: ${getPaymentMethod(order['payment_method'])}",
+                    //   style: const TextStyle(fontSize: 16),
+                    // ),
                     const SizedBox(height: 12),
                     Text(
                       "Order Status: ${getOrderSatus(order['order_status'])}",

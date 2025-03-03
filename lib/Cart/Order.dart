@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:canteen/Cart/History.dart';
+import 'package:canteen/Cart/OrderShow.dart';
 import 'package:canteen/Pages/HomeScreen.dart';
 import 'package:canteen/Profile/Profile.dart';
 import 'package:canteen/Profile/ProfileEdit.dart';
@@ -75,7 +77,7 @@ class OrderPage extends StatelessWidget {
       "payment_status": paymentStatus,
       "items": items,
     };
-print(orderData);
+
     try {
       // Instantiate ApiHelper
       ApiHelper apiHelper = ApiHelper();
@@ -87,10 +89,6 @@ print(orderData);
         var responseData = json.decode(response.body);
 
         if (responseData['status'] == "success") {
-          // Show success message
-
-          showTopMessage(
-              context, "Order placed successfully!", Colors.green);
           // Clear the cart
           final clearCartResponse = await apiHelper.httpPost(clearCartApi, {
             "customer_id": customerId,
@@ -98,29 +96,30 @@ print(orderData);
 
           if (clearCartResponse.statusCode == 200) {
             var clearCartData = json.decode(clearCartResponse.body);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ConfirmationPage(    name: name, phone: phone, address: Address,
-                  email: email, image: image,  toggleTheme: toggleTheme,
-                  isDarkMode: isDarkMode, customerId: customerId,),
-              ),
-            );
+
             if (clearCartData['status'] == "success") {
-              // Show cart cleared message
-              // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              //   content: Text("Cart cleared successfully!"),
-              //   backgroundColor: Colors.blue,
-              // ));
+              // Navigate to ConfirmationPage immediately
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ConfirmationPage(
+                    name: name,
+                    phone: phone,
+                    address: Address,
+                    email: email,
+                    image: image,
+                    toggleTheme: toggleTheme,
+                    isDarkMode: isDarkMode,
+                    customerId: customerId,
+                  ),
+                ),
+              );
             } else {
               throw Exception("Failed to clear cart: ${clearCartData['message']}");
             }
           } else {
             throw Exception("Server Error: ${clearCartResponse.statusCode} while clearing cart.");
           }
-
-          // Navigate to confirmation page
-
         } else {
           throw Exception("Failed to place order: ${responseData['message']}");
         }
@@ -533,18 +532,16 @@ print(orderData);
 }
 
 
-
 class ConfirmationPage extends StatefulWidget {
   final String name;
   final int customerId;
   final String email;
   final String phone;
-  final String address; // Changed to follow camelCase convention
+  final String address;
   final String image;
   final VoidCallback toggleTheme;
   final bool isDarkMode;
 
-  // Constructor
   const ConfirmationPage({
     Key? key,
     required this.name,
@@ -552,8 +549,11 @@ class ConfirmationPage extends StatefulWidget {
     required this.email,
     required this.phone,
     required this.address,
-    required this.image, required this.toggleTheme, required this.isDarkMode,
+    required this.image,
+    required this.toggleTheme,
+    required this.isDarkMode,
   }) : super(key: key);
+
   @override
   _ConfirmationPageState createState() => _ConfirmationPageState();
 }
@@ -564,18 +564,20 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
   @override
   void initState() {
     super.initState();
-    // Play success sound
+    // Play success sound immediately
     _playSuccessSound();
 
     // Navigate to HomeScreen after 4 seconds
     Future.delayed(Duration(seconds: 4), () {
-Navigator.push(context, MaterialPageRoute(builder: (context)=>HomeScreen(
-    name: widget.name, id: widget.customerId, phone: widget.phone, address: widget.address,
-    email: widget.email, image: widget.image,  toggleTheme: widget.toggleTheme,
-  isDarkMode: widget.isDarkMode,)));
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>  HistoryPage(customerId: widget.customerId,
+            name: widget.name,email: widget.email,image: widget.image,address: widget.address,
+            phone: widget.phone, toggleTheme: widget.toggleTheme, isDarkMode: widget.isDarkMode,)),
+      );
     });
   }
-
   Future<void> _playSuccessSound() async {
     try {
       await _audioPlayer.play(

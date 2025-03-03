@@ -3,14 +3,30 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../Authantication/AuthUser.dart';
+import '../Pages/HomeScreen.dart';
 import 'OrderShow.dart';
+// Import your HomeScreen
 
 class HistoryPage extends StatefulWidget {
   final int customerId;
+  final String name;
+  final String phone;
+  final String address;
+  final String email;
+  final String image;
+  final VoidCallback toggleTheme;
+  final bool isDarkMode;
 
   const HistoryPage({
     Key? key,
     required this.customerId,
+    required this.name,
+    required this.phone,
+    required this.address,
+    required this.email,
+    required this.image,
+    required this.toggleTheme,
+    required this.isDarkMode,
   }) : super(key: key);
 
   @override
@@ -33,7 +49,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
       if (response.statusCode == 200) {
         setState(() {
-          orders = json.decode(response.body);
+          orders = List.from(json.decode(response.body).reversed);;
           isLoading = false;
         });
       } else {
@@ -89,101 +105,122 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Order History"),
-        centerTitle: true,
-        // backgroundColor: Colors.deepOrange,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : orders.isEmpty
-          ? const Center(child: Text("No Orders Found"))
-          : ListView.builder(
-        itemCount: orders.length,
-        itemBuilder: (context, index) {
-          final order = orders[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => OrderShow(order: order),
-                ),
-              );
-            },
-            child: Card(
-              margin: const EdgeInsets.all(12),
-              elevation: 10,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Order Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Order ${index+1}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Colors.deepOrange,
-                          ),
-                        ),
-                        Text(
-                          order['order_date'],
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    const Divider(),
-                    const SizedBox(height: 10),
-                    // Order Footer
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Total: ₹${order['total_price']}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.green,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time,
-                              color: _getOrderStatusColor(order['order_status']),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              _getOrderStatusText(order['order_status']),
-                              style: TextStyle(
-                                color: _getOrderStatusColor(order['order_status']),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+    return WillPopScope(
+      onWillPop: () async {
+        // Navigate to HomeScreen and clear all previous routes
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              name: widget.name,
+              id: widget.customerId,
+              phone: widget.phone,
+              address: widget.address,
+              email: widget.email,
+              image: widget.image,
+              toggleTheme: widget.toggleTheme,
+              isDarkMode: widget.isDarkMode,
             ),
-          );
-        },
+          ),
+              (route) => false, // Clear all routes
+        );
+        return false; // Prevent default back button behavior
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Order History"),
+          centerTitle: true,
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : orders.isEmpty
+            ? const Center(child: Text("No Orders Found"))
+            : ListView.builder(
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            final order = orders[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OrderShow(order: order),
+                  ),
+                );
+              },
+              child: Card(
+                margin: const EdgeInsets.all(12),
+                elevation: 10,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Order Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Order ${order['order_id']}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Colors.deepOrange,
+                            ),
+                          ),
+                          Text(
+                            order['order_date'],
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      const Divider(),
+                      const SizedBox(height: 10),
+                      // Order Footer
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Total: ₹${order['total_price']}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.green,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                color: _getOrderStatusColor(order['order_status']),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                _getOrderStatusText(order['order_status']),
+                                style: TextStyle(
+                                  color: _getOrderStatusColor(order['order_status']),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

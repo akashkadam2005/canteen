@@ -11,7 +11,6 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../Authantication/AuthUser.dart';
-import '../Product/Categorylist.dart';
 import '../Product/CollectionFavroite.dart';
 import '../Product/ProductView.dart';
 import '../Profile/Profile.dart';
@@ -79,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchWishlistItems();
     fetchSliderImages();
     fetchSearchData();
+    fetchRecommendedItems();
   }
 
 
@@ -211,9 +211,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _stopListening(); // Ensure listening stops when modal is closed
     });
   }
-
-
-
 
   TextEditingController searchController = TextEditingController();
 
@@ -527,50 +524,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> addItem(String productId, int quantity) async {
     try {
-      // Step 1: Optimistic UI update (Update quantity immediately)
+      // Step 1: Optimistic UI update (immediately set quantity)
       setState(() {
-        if (quantity == 0) {
-          productQuantities[productId] = 0; // Revert to 0 if no product added
-          cartItemCount -= 1;
-          productAddedToCart[productId] = false;
-        } else {
-          cartItemCount += 1;
-          productAddedToCart[productId] = true;
-          productQuantities[productId] = quantity;
-        }
+        productQuantities[productId] = quantity;
       });
 
-      // Step 2: Show the Lottie animation in full screen
-      // Step 2: Show the Lottie animation in full screen with dark opacity background
-      showDialog(
-        context: context,
-        barrierDismissible: false, // Prevent closing the dialog
-        builder: (BuildContext context) {
-          return Stack(
-            children: [
-              // Background with opacity
-              Container(
-                color: Colors.black
-                    .withOpacity(0.7), // Dark background with 70% opacity
-              ),
-              Center(
-                child: Lottie.asset(
-                  'assets/images/AnimationAddproduct.json', // Path to the Lottie file
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ],
-          );
-        },
-      );
+      // Step 2: Show the Lottie animation
+      _showLottieAnimation();
 
-      // Step 3: Wait for the animation duration
-      await Future.delayed(Duration(seconds: 4));
-
-      // Step 4: Close the Lottie animation dialog
-      Navigator.of(context).pop();
-
-      // Step 5: Make API call to add the item
+      // Step 3: Make API call to add the item
       final response = await ApiHelper().httpPost(
         'cart/store.php',
         {
@@ -587,32 +549,50 @@ class _HomeScreenState extends State<HomeScreen> {
         // Fetch the updated cart count or other data
         await fetchCartCount(); // Update the cart count
         refreshPage(); // Refresh the page or data
-
-        // Show success message
-        showTopMessage(
-            context, "Product added to cart successfully!", Colors.green);
       } else {
         // Handle failure (Revert optimistic update)
         setState(() {
-          cartItemCount -= 1;
-          productAddedToCart[productId] = false;
           productQuantities[productId] = 0;
         });
-
-        // Show failure message
-        showTopMessage(
-            context, "Failed to add to cart. Please try again.", Colors.red);
       }
     } catch (e) {
       // Handle errors (Revert optimistic update)
       setState(() {
-        cartItemCount -= 1;
-        productAddedToCart[productId] = false;
+        productQuantities[productId] = 0;
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
     }
+  }
+
+// ✅ Optimized Lottie Animation Dialog
+  void _showLottieAnimation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent manual closing
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: SizedBox(
+            height: 150, // Small & beautiful
+            width: 150,
+            child: Lottie.asset(
+              'assets/images/AnimationAddproduct.json',
+              fit: BoxFit.contain,
+            ),
+          ),
+        );
+      },
+    );
+
+    // Close animation after 2 seconds
+    Future.delayed(Duration(seconds: 3), () {
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+    });
   }
 
   void refreshPage() {
@@ -811,9 +791,40 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> fetchRecommendedItems() async {
+    final response = await ApiHelper().httpGet('product/index.php');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+
+      if (responseData["status"] == "success") {
+        List<dynamic> allProducts = responseData["data"];
+
+        // Filter: Get products with avg_rating > 3
+        List<dynamic> filteredProducts = allProducts
+            .where((product) => double.tryParse(product["avg_rating"] ?? "0") != null &&
+            double.parse(product["avg_rating"]) > 3)
+            .toList();
+
+        // Sort: Highest avg_rating first
+        filteredProducts.sort((a, b) => double.parse(b["avg_rating"]).compareTo(double.parse(a["avg_rating"])));
+
+        // Limit: Take top 10
+        List<dynamic> topProducts = filteredProducts.take(10).toList();
+
+        setState(() {
+          recommendedItems = topProducts;
+        });
+      }
+    } else {
+      print("Failed to load products");
+    }
+  }
+
+
+
   Widget buildHorizontalCardList(List<dynamic> items) {
     if (items.isEmpty) {
-      // Display "No Recommended Items Found" if the list is empty
       return Center(
         child: Text(
           'No Items Found',
@@ -826,25 +837,21 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    // Render horizontal list if items are available
     return SingleChildScrollView(
-      scrollDirection: Axis.horizontal, // Horizontal scrolling
+      scrollDirection: Axis.horizontal,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: List.generate(
-          (items.length / 2).ceil(), // Number of columns (two items per row)
-          (rowIndex) {
-            // Create 2 rows per column
+          (items.length / 2).ceil(),
+              (rowIndex) {
             final int firstIndex = rowIndex * 2;
             final int secondIndex = firstIndex + 1;
 
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Row 1 item
                 if (firstIndex < items.length) buildCard(items[firstIndex]),
-                SizedBox(height: 10), // Space between rows
-                // Row 2 item
+                SizedBox(height: 10),
                 if (secondIndex < items.length) buildCard(items[secondIndex]),
                 SizedBox(height: 10),
               ],
@@ -863,9 +870,9 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(
             builder: (context) => ViewProductPage(
               product: item,
-              id: widget.id, toggleTheme: widget.toggleTheme,
-              isDarkMode:
-                  widget.isDarkMode, // Pass the product ID or any relevant data
+              id: widget.id,
+              toggleTheme: widget.toggleTheme,
+              isDarkMode: widget.isDarkMode,
             ),
           ),
         );
@@ -877,8 +884,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         elevation: 5,
         child: Container(
-          width: 110, // Smaller card width
-          padding: EdgeInsets.all(6), // Reduced padding for a compact layout
+          width: 110,
+          padding: EdgeInsets.all(6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -888,43 +895,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(10),
                     child: item['product_image']?.isNotEmpty ?? false
                         ? Image.network(
-                            ApiHelper().getImageUrl(
-                                'products/${item['product_image']}'),
-                            // 'http://192.168.242.172/CanteenAutomation/uploads/products/${item['product_image']}',
-                            height: 90, // Reduced height for the image
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
+                      ApiHelper().getImageUrl(
+                          'products/${item['product_image']}'),
+                      height: 90,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
                         : Image.asset(
-                            "assets/images/p1.jpg",
-                            height: 90, // Same reduced height for placeholder
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                  ),
-                  if (item['product_dis_value'] != null &&
-                      double.tryParse(item['product_dis_value']) != null &&
-                      double.parse(item['product_dis_value']) > 0)
-                    Positioned(
-                      top: 60,
-                      right: 8,
-                      child: Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${item['product_dis_value']}% OFF',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                      "assets/images/p1.jpg",
+                      height: 90,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     ),
+                  ),
                 ],
               ),
               SizedBox(height: 6),
@@ -932,19 +915,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 item['product_name'],
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: 12, // Smaller font size for a compact look
-                  // color: Colors.black,
+                  fontSize: 12,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
               SizedBox(height: 4),
-              Text(
-                "₹${item['product_price']}",
-                style: TextStyle(
-                  color: Colors.green,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+
+              SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "₹${item['product_price']}",
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+
+                  SizedBox(width: 4),
+                  Icon(Icons.star, color: Colors.amber, size: 14),
+                  Text(
+                    item['avg_rating']?.toString() ?? 'N/A',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1519,6 +1518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
             ),
+
             Padding(
               padding: EdgeInsets.all(10),
               child: Row(
@@ -1534,23 +1534,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Icon(
                           Icons.favorite,
-                          color:
-                              isRecommendedSelected ? Colors.green : Colors.red,
+                          color: isRecommendedSelected ? Colors.green : Colors.red,
                         ),
                         SizedBox(width: 8),
                         Text(
                           "Favorites",
                           style: TextStyle(
-                            color: !isRecommendedSelected
-                                ? Colors.white
-                                : Colors.green,
+                            color: !isRecommendedSelected ? Colors.white : Colors.green,
                           ),
                         ),
                       ],
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          !isRecommendedSelected ? Colors.green : Colors.white,
+                      backgroundColor: !isRecommendedSelected ? Colors.green : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1561,30 +1557,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {
                       setState(() {
                         isRecommendedSelected = true;
+                        fetchRecommendedItems(); // Fetch recommended items
                       });
                     },
                     child: Row(
                       children: [
                         Icon(
                           Icons.recommend,
-                          color: !isRecommendedSelected
-                              ? Colors.green
-                              : Colors.red,
+                          color: !isRecommendedSelected ? Colors.green : Colors.red,
                         ),
                         SizedBox(width: 8),
                         Text(
                           "Recommended",
                           style: TextStyle(
-                            color: isRecommendedSelected
-                                ? Colors.white
-                                : Colors.green,
+                            color: isRecommendedSelected ? Colors.white : Colors.green,
                           ),
                         ),
                       ],
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isRecommendedSelected ? Colors.green : Colors.white,
+                      backgroundColor: isRecommendedSelected ? Colors.green : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1599,12 +1591,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   SizedBox(height: 10),
                   isRecommendedSelected
-                      ? buildHorizontalCardList(recommendedItems)
-                      : buildHorizontalCardList(wishlistItems),
-
+                      ? buildHorizontalCardList(recommendedItems) // Show recommended items
+                      : buildHorizontalCardList(wishlistItems),   // Show wishlist items
                 ],
               ),
             ),
+
             SizedBox(
               height: 30,
             ),
@@ -1820,6 +1812,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+
+
             filteredProducts.isEmpty
                 ? Center(
                     child: Padding(
@@ -2062,21 +2056,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        // Container(
-                                        //   padding: EdgeInsets.symmetric(
-                                        //       horizontal: 6, vertical: 2),
-                                        //   decoration: BoxDecoration(
-                                        //     color: Colors.green,
-                                        //     borderRadius: BorderRadius.circular(5),
-                                        //   ),
-                                        //   child: Text(
-                                        //     "${product['product_dis']} Rating",
-                                        //     style: TextStyle(
-                                        //       fontSize: 12,
-                                        //       color: Colors.white,
-                                        //     ),
-                                        //   ),
-                                        // ),
                                       ],
                                     ),
                                     SizedBox(height: 8),
@@ -2102,122 +2081,97 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ],
                                         ),
                                         Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             // Quantity or Add Button
-                                            (productQuantities[productId] ??
-                                                        0) ==
-                                                    0
+                                            (productQuantities[productId] ?? 0) == 0
                                                 ? GestureDetector(
-                                                    onTap: () async {
-                                                      setState(() {
-                                                        productQuantities[
-                                                                productId] =
-                                                            1; // Set quantity to 1
-                                                      });
-                                                      await addItem(productId,
-                                                          1); // Add the product to the backend
-                                                    },
-                                                    child: Container(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                              vertical: 6,
-                                                              horizontal: 12),
-                                                      decoration: BoxDecoration(
-                                                        color:
-                                                            Colors.orangeAccent,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: Colors.black
-                                                                .withOpacity(
-                                                                    0.2),
-                                                            blurRadius: 6,
-                                                            offset:
-                                                                Offset(2, 2),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      child: Text(
-                                                        "Add",
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: Colors.white,
-                                                        ),
-                                                      ),
+                                              onTap: () async {
+                                                // Step 1: Optimistic UI update (immediately set quantity to 1)
+                                                setState(() {
+                                                  productQuantities[productId] = 1;
+                                                });
+
+                                                // Step 2: Show the Lottie animation (non-blocking)
+                                                _showLottieAnimation();
+
+                                                // Step 3: Add the product to the backend
+                                                await addItem(productId, 1);
+                                              },
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.orangeAccent,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.2),
+                                                      blurRadius: 6,
+                                                      offset: Offset(2, 2),
                                                     ),
-                                                  )
-                                                : Container(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                            vertical: 6,
-                                                            horizontal: 12),
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          Colors.orangeAccent,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors.black
-                                                              .withOpacity(0.2),
-                                                          blurRadius: 6,
-                                                          offset: const Offset(
-                                                              2, 2),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    child: Text(
-                                                      "${productQuantities[productId]}", // Show the current quantity
-                                                      style: const TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
+                                                  ],
+                                                ),
+                                                child: Text(
+                                                  "Add",
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
                                                   ),
-                                            SizedBox(
-                                              width: 20,
+                                                ),
+                                              ),
+                                            )
+                                                : Container(
+                                              padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.orangeAccent,
+                                                borderRadius: BorderRadius.circular(8),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.2),
+                                                    blurRadius: 6,
+                                                    offset: Offset(2, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Text(
+                                                "${productQuantities[productId]}", // Show the current quantity
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                             ),
+                                            SizedBox(width: 20),
                                             // Increment Button
                                             GestureDetector(
                                               onTap: () async {
+                                                // Step 1: Optimistic UI update (immediately increment quantity)
                                                 setState(() {
-                                                  productQuantities[productId] =
-                                                      (productQuantities[
-                                                                  productId] ??
-                                                              0) +
-                                                          1; // Increment quantity
+                                                  productQuantities[productId] = (productQuantities[productId] ?? 0) + 1;
                                                 });
-                                                await addItem(
-                                                    productId,
-                                                    productQuantities[
-                                                        productId]!); // Update backend
+
+                                                // Step 2: Show the Lottie animation (non-blocking)
+                                                _showLottieAnimation();
+
+                                                // Step 3: Update the backend
+                                                await addItem(productId, productQuantities[productId]!);
                                               },
                                               child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(12),
+                                                padding: EdgeInsets.all(12),
                                                 decoration: BoxDecoration(
                                                   color: Colors.green,
                                                   shape: BoxShape.circle,
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Colors.green
-                                                          .withOpacity(0.2),
+                                                      color: Colors.green.withOpacity(0.2),
                                                       blurRadius: 6,
-                                                      offset:
-                                                          const Offset(2, 2),
+                                                      offset: Offset(2, 2),
                                                     ),
                                                   ],
                                                 ),
-                                                child: const Icon(
+                                                child: Icon(
                                                   Icons.add,
                                                   color: Colors.white,
                                                   size: 24,

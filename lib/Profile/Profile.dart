@@ -239,7 +239,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       // Navigate to the Favorite Page
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => HistoryPage(customerId: widget.id,)),
+                        MaterialPageRoute(builder: (context) =>  HistoryPage(customerId: widget.id,
+                          name: widget.name,email: widget.email,image: widget.image,
+                          address: widget.address, phone: widget.phone, toggleTheme: widget.toggleTheme, isDarkMode: widget.isDarkMode,)),
                       );
                     },
                   ),
